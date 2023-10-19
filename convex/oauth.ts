@@ -55,26 +55,23 @@ export const exchangeCode = action({
     url.searchParams.set("code", args.code);
     const resp = await fetch(url, {
       method: "POST",
+      headers: {
+        Accept: "application/json",
+      },
     });
     if (resp.status !== 200) {
       throw new Error(
         "Failed to exchange OAuth code for access token: " + resp.statusText
       );
     }
-    const body = await resp.text();
-    const params = new URLSearchParams(body);
-
-    const data: OAuthAccessTokenResponse = Object.fromEntries(
-      params.entries()
-    ) as unknown as OAuthAccessTokenResponse;
-    console.log(data);
-    if (params.get("error")) {
+    const data = await resp.json();
+    if (data.error) {
       throw new Error(
         "Failed to exchange OAuth code for access token: " +
           JSON.stringify(data)
       );
     }
-    return data;
+    return data as OAuthAccessTokenResponse;
   },
 });
 
@@ -92,6 +89,9 @@ export const refreshAccessToken = action({
     url.searchParams.set("refresh_token", args.refreshToken);
     const resp = await fetch(url, {
       method: "POST",
+      headers: {
+        Accept: "application/json",
+      },
     });
     const data: OAuthRefreshResponse = await resp.json();
     return data;
