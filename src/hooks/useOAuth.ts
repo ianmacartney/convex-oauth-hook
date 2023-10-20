@@ -1,7 +1,14 @@
 import { ConvexReactClient } from "convex/react";
-import { FunctionReference } from "convex/server";
+// import { FunctionReference } from "convex/server";
 import { useCallback, useMemo } from "react";
 import { useLocalStorage } from "usehooks-ts";
+// import type * as OAuthApi from "../../convex/oauth";
+import type * as oauth from "../../convex/oauth";
+import { ApiFromModules } from "convex/server";
+
+declare const API: ApiFromModules<{
+  oauth: typeof oauth;
+}>;
 
 const LOCALSTORAGE_KEY = "_convex_oauth";
 const REFRESH_TIME_BUFFER = 1000 * 30;
@@ -20,24 +27,24 @@ export type OAuthStoredData = {
   refresh_token_expires_at?: number;
 };
 
-type OAuthAPI = {
-  exchangeCode: FunctionReference<
-    "action",
-    "public",
-    {
-      code: string;
-    },
-    OAuthResponseData
-  >;
-  refreshAccessToken: FunctionReference<
-    "action",
-    "public",
-    {
-      refreshToken: string;
-    },
-    OAuthResponseData
-  >;
-};
+// type OAuthAPI = {
+//   exchangeCode: FunctionReference<
+//     "action",
+//     "public",
+//     {
+//       code: string;
+//     },
+//     OAuthResponseData
+//   >;
+//   refreshAccessToken: FunctionReference<
+//     "action",
+//     "public",
+//     {
+//       refreshToken: string;
+//     },
+//     OAuthResponseData
+//   >;
+// };
 
 export function useOAuthData() {
   const [storedData] = useLocalStorage<OAuthStoredData | undefined>(
@@ -48,7 +55,7 @@ export function useOAuthData() {
 }
 
 export function makeUseOAuth(
-  api: OAuthAPI,
+  oauth: typeof API.oauth,
   convex: ConvexReactClient,
   redirectUri?: string
 ) {
@@ -105,7 +112,7 @@ export function makeUseOAuth(
         ) {
           if (code && isLoginPage) {
             try {
-              const data = await convex.action(api.exchangeCode, { code });
+              const data = await convex.action(oauth.exchangeCode, { code });
               storeData(data);
               window.location.href = urlWithoutCode!;
               return data.access_token;
@@ -118,7 +125,7 @@ export function makeUseOAuth(
             storedData?.refresh_token_expires_at &&
             storedData?.refresh_token_expires_at > Date.now()
           ) {
-            const data = await convex.action(api.refreshAccessToken, {
+            const data = await convex.action(oauth.refreshAccessToken, {
               refreshToken: storedData.refresh_token,
             });
             storeData(data);
